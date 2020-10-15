@@ -1,6 +1,7 @@
-from pantools.net import get_local_ip
-from pantools import net
+from os import wait
+import pantools.net as pt
 
 def test_ip():
-    str = get_local_ip()
-    
+    str = pt.get_local_ip()
+    pt.announce_service(9999,"MAGICCOOKIE")
+    # pt.wait_for_announcement(9999, "MAGICCOOKIE")

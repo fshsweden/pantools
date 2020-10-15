@@ -21,10 +21,10 @@ def announce_service(port, magic):
     # my_ip=gethostbyname(gethostname()) #get our IP. Be careful if you have multiple network interfaces or IPs
     my_ip = get_local_ip()
 
-    data = MAGIC+my_ip
+    data = magic+my_ip
     data = data.encode('utf-8')
     # print("data:[", data, "]")
-    s.sendto(data, ('<broadcast>', PORT))
+    s.sendto(data, ('<broadcast>', port))
     print("sent service announcement:", data)
 
     s.close()
