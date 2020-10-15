@@ -1,1 +1,1 @@
-from . import myfunctions
+from . import net
