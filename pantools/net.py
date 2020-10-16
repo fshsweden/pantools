@@ -21,7 +21,9 @@ def announce_service(port, magic):
     # my_ip=gethostbyname(gethostname()) #get our IP. Be careful if you have multiple network interfaces or IPs
     my_ip = get_local_ip()
 
-    data = magic+my_ip
+    # format id <magicstring>#<ip>#<port> !
+    data = magic+'#'+my_ip+'#'+str(port)
+
     data = data.encode('utf-8')
     # print("data:[", data, "]")
     s.sendto(data, ('<broadcast>', port))
@@ -36,16 +38,19 @@ def wait_for_announcement(port, magic):
 
     found = False
     str = ""
+    ip = ""
+    port = 0
 
     while not found:
         data, addr = s.recvfrom(1024)  # wait for a packet
         str = data.decode('utf-8')
         if str.startswith(magic):
             found = True
+            (m, ip, port) = str.split('#')
             print("got service announcement from", str[len(magic):])
 
     s.close()
-    return str
+    return (ip, int(port))
 
 
 def haversine(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
