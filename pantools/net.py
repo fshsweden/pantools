@@ -1,39 +1,51 @@
-import numpy as np
 from time import sleep
-from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_BROADCAST, gethostbyname, gethostbyname_ex, gethostname
+from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_BROADCAST, SO_REUSEADDR, gethostbyname, gethostbyname_ex, gethostname
 #import socket
-
+import logging
+import numpy as np
 
 def get_local_ip():
-    addr = [l for l in ([ip for ip in gethostbyname_ex(gethostname())[2] if not ip.startswith("127.")][:1], [
-                        [(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in [socket(AF_INET, SOCK_DGRAM)]][0][1]]) if l][0][0]
+#    addr = [l for l in ([ip for ip in gethostbyname_ex(gethostname())[2] if not ip.startswith("127.")][:1], [
+#                        [(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in [socket(AF_INET, SOCK_DGRAM)]][0][1]]) if l][0][0]
+
+    addr = [l for l in ([ip for ip in gethostbyname_ex(gethostname())[2] if not ip.startswith("127.")][:1], [[(s.connect(('8.8.8.8', 53)), s.getsockname()[0], s.close()) for s in [socket(AF_INET, SOCK_DGRAM)]][0][1]]) if l][0][0]
     return addr
 
 
-def announce_service(port, magic):
+logging.basicConfig(
+    format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d in function %(funcName)s] %(message)s',
+    datefmt='%Y-%m-%d:%H:%M:%S',
+    level=logging.INFO
+)
+
+logger = logging.getLogger(__name__)
+
+
+def get_net_version():
+    return "1.0"
+    
+
+
+
+def announce_service(adv_magic, adv_port, service_host, service_port):
 
     s = socket(AF_INET, SOCK_DGRAM)  # create UDP socket
-    s.bind(('', 0))
     s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)  # this is a broadcast socket
-
-    # print("hostname=", gethostname())
-    # print("gethostname=", gethostbyname_ex(gethostname()))
-    # my_ip=gethostbyname(gethostname()) #get our IP. Be careful if you have multiple network interfaces or IPs
-    my_ip = get_local_ip()
+    s.bind(('', 0))
 
     # format id <magicstring>#<ip>#<port> !
-    data = magic+'#'+my_ip+'#'+str(port)
+    data = adv_magic+'#' + service_host + '#'+str(service_port)
 
     data = data.encode('utf-8')
-    # print("data:[", data, "]")
-    s.sendto(data, ('<broadcast>', port))
-    print("sent service announcement:", data)
+    s.sendto(data, ('<broadcast>', adv_port))
+    # print("sent service announcement:", data, " on UDP port ", adv_port)
 
     s.close()
 
 
 def wait_for_announcement(port, magic):
     s = socket(AF_INET, SOCK_DGRAM)  # create UDP socket
+    s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     s.bind(('', port))
 
     found = False
@@ -47,7 +59,7 @@ def wait_for_announcement(port, magic):
         if str.startswith(magic):
             found = True
             (m, ip, port) = str.split('#')
-            print("got service announcement from", str[len(magic):])
+            logger.debug("got service announcement from {}, with ip {} and port {}".format(str[len(magic):], ip, port))
 
     s.close()
     return (ip, int(port))
