@@ -7,6 +7,7 @@ import time
 import struct
 import imutils
 from imutils.video import VideoStream
+import queue
 
 from _thread import *
 from sys import int_info
@@ -239,6 +240,13 @@ class TCPClient:
         self.msg_handler = None
         self.exception_handler = None
         self.connection_status_handler = None
+        
+        self.inq = queue.Queue(10000)
+        self.outq = queue.Queue(10000)
+
+        self.quit_write_thread = False
+        self.quit_read_thread = False
+
 
     # ------------------------------------------------------------
     # TCPClient:add_connection_status_handler
@@ -275,9 +283,12 @@ class TCPClient:
         try:
             logger.info("Connecting to: {}:{}".format(ip, port))
             self.sock.connect((ip, port))
-            logger.info("Connected!")
+            logger.info("Connected! - Starting worker threads")
             self.handle_connection_status("connected")
+            
+            start_new_thread(self.write_thread, ())
             start_new_thread(self.read_thread, ())
+
         except Exception as e:
             logger.error("Got an exception {} trying to connect".format(str(e)))
             self.handle_connection_status("disconnected")
@@ -311,7 +322,28 @@ class TCPClient:
     # ------------------------------------------------------------
     #
     # ------------------------------------------------------------
+    def write_thread(self):
+        logger.debug("+++ ENTR +++ write_thread()")
+        while (not self.quit_write_thread):
+            if self.outq.empty():
+                time.sleep(0.5)
+            else:
+                out_msg = self.outq.get()
+
+                try:
+                    send_size(out_msg)
+                except Exception as e:
+                    self.handle_exception(e)
+                    logger.error(f"Exception: {e} - exiting write thread")
+                    return
+
+
+    # ------------------------------------------------------------
+    #
+    # ------------------------------------------------------------
     def handle_message(self, msg):
+        #self.inq.put(msg)
+        
         if self.msg_handler is not None:
             self.msg_handler(msg)
 
@@ -344,13 +376,20 @@ class TCPClient:
                 "hostname": socket.gethostname()
             })
 
+
+    #   BUG: DONT USE BOTH THIS AND THE QUEUE VERSION AT THE SAME TIME!
     #
+    #
+    def send_msg_direct(self, msg_json):
+        msg_encoded = pickle.dumps(msg_json)
+        send_size(self.sock, msg_encoded)
+
+    #   BUG: DONT USE BOTH THIS AND THE DIRECT VERSION AT THE SAME TIME!
     #
     #
     def send_msg(self, msg_json):
         msg_encoded = pickle.dumps(msg_json)
-        send_size(self.sock, msg_encoded)
-
+        self.outq.put(msg_encoded)
 
 # ================================================================
 #
