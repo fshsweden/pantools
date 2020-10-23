@@ -1,21 +1,27 @@
-import struct
 import socket
+import struct
 import pickle
 
-# ****************************************************************
-# Generic socket utilities
-# ****************************************************************
-def send_size(sock, data):
+def send_size(sock: socket, data: bytes):
     # data is bytes()
+    print(f"send_size sends {len(data)} followed by the data")
     sock.sendall(struct.pack(">i", len(data)) + data)
 
+# an alias since json was really a dict!
+def send_json(connection: socket, json: dict):
+    send_dict(dict)
 
-def send_json(connection, json):
-    message = pickle.dumps(json)
+def send_dict(connection: socket, d: dict):
+    #convert dictionary to bytes
+    message = pickle.dumps(d)
+    # print(f"sending: {message}")
     send_size(connection, message)
 
+def recv_dict(sock: socket) -> dict:
+    b = recv_size(sock)
+    return pickle.loads(b)
 
-def recv_size(sock):
+def recv_size(sock: socket) -> str:
     # data length is packed into 4 bytes
     total_bytes_read = 0
     size_of_message = 300000
@@ -37,7 +43,8 @@ def recv_size(sock):
             length_field += chunk
 
     size_of_message = struct.unpack(">i", length_field)[0]
-    # print("size of message is: {}".format(size_of_message))
+    
+    #print("size of message is: {}".format(size_of_message))
 
     total_bytes_read = 0
     while total_bytes_read < size_of_message:
@@ -48,3 +55,4 @@ def recv_size(sock):
         buffer += chunk
 
     return buffer
+    
