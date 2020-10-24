@@ -169,14 +169,9 @@ class TCPServer:
             logger.info("Client connected: " + address[0] + ":" + str(address[1]))
 
             client = ClientConnection(client_socket, self)
-
-            #self.add_connection(client_socket)
             self.add_client(client)
-
             self.print_clients("After CLIENT ACCEPTED")
-            #start_new_thread(self.read_thread, (client_socket,))
-            #self.ThreadCount += 1
-            #logger.info("Started thread Number: " + str(self.ThreadCount))
+            client.start_reader()
 
     def stop_server(self):
         self.ServerSocket.close()

@@ -1,21 +1,22 @@
 import socket
 import struct
 import pickle
+from .logger import logger
 
 def send_size(sock: socket, data: bytes):
     # data is bytes()
-    print(f"send_size sends {len(data)} followed by the data")
+    logger.debug(f"send_size sends {len(data)} followed by the data")
     sock.sendall(struct.pack(">i", len(data)) + data)
 
 # an alias since json was really a dict!
-def send_json(connection: socket, json: dict):
-    send_dict(dict)
+def send_json(sock: socket, d: dict):
+    send_dict(sock, d)
 
-def send_dict(connection: socket, d: dict):
+def send_dict(sock: socket, d: dict):
     #convert dictionary to bytes
     message = pickle.dumps(d)
-    # print(f"sending: {message}")
-    send_size(connection, message)
+    logger.debug(f"sending dictionary")
+    send_size(sock, message)
 
 def recv_dict(sock: socket) -> dict:
     b = recv_size(sock)
@@ -44,15 +45,18 @@ def recv_size(sock: socket) -> str:
 
     size_of_message = struct.unpack(">i", length_field)[0]
     
-    #print("size of message is: {}".format(size_of_message))
+    logger.info("size of message is: {}".format(size_of_message))
 
     total_bytes_read = 0
     while total_bytes_read < size_of_message:
         # receives bytes!
         chunk = sock.recv(size_of_message - len(buffer))
-        # print("read chunk: {}".format(len(chunk)))
+        logger.info("  read chunk: {}".format(len(chunk)))
         total_bytes_read += len(chunk)
         buffer += chunk
 
+    logger.info(f"  done reading chunks: total size is {len(buffer)}")
+    if (total_bytes_read != len(buffer)):
+        print("XXXXXXXXXXX SRIOUS ERROR! XXXXXXXXXXXX")
     return buffer
     

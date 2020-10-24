@@ -6,7 +6,7 @@ from _thread import *
 from pantools.net import announce_service, wait_for_announcement
 
 from .logger import logger
-from .send_recv import send_json, send_size, recv_size
+from .send_recv import recv_dict, recv_size
 #from .TCPServer import TCPServer
 
 class ClientConnection:
@@ -16,6 +16,10 @@ class ClientConnection:
         self.server = server
         self.hostname = "unknown"
         self.hosttype = "unknown"
+
+        self.filenum = 0
+
+    def start_reader(self):    
         start_new_thread(self.read_thread, ())
 
     def getPeerName(self):
@@ -39,6 +43,12 @@ class ClientConnection:
     def get_id(self) -> str:
         return f"{self.hostname} : {self.hosttype}"
 
+    def save_buffer(self, buf: bytes):
+        self.filenum=self.filenum+1
+        filename = f"exception-file-{self.filenum}.pkl"
+        with open(filename, "wb") as mypicklefile:
+            pickle.dump(buf, mypicklefile)
+
     #
     # Thread started for each connection!
     #
@@ -49,15 +59,18 @@ class ClientConnection:
 
         logger.debug("Startar recv_size() loop")
         while True:
+            buf = bytes()
             try:
-                data = recv_size(self.sock)
-                obj = pickle.loads(data)
-                self.server.handle_message(self, obj)
+                #obj = recv_dict(self.sock)
+                buf = recv_size(self.sock)
+                obj = pickle.loads(buf)
 
             except Exception as e:
                 logger.error(str(e))
-                logger.info("Apparently the client hung up! Closing connection!")
-                #self.server.remove_client(self.sock)
+                logger.info("Exception when reading incoming message! Closing connection!")
+
+                self.save_buffer(buf)
+                #TEMPORARILY DISABLED
                 self.server.read_exception(self, e)
                 self.sock.close()
                 return # close thread!
