@@ -5,8 +5,11 @@ from .logger import logger
 
 def send_size(sock: socket, data: bytes):
     # data is bytes()
-    logger.debug(f"send_size sends {len(data)} followed by the data")
-    sock.sendall(struct.pack(">i", len(data)) + data)
+    lbuf = struct.pack(">i", len(data))
+    logger.debug(f"send_size sends {len(lbuf)} {len(data)} followed by the data")
+    sock.sendall(lbuf)
+    #buf = struct.pack(">i", data)
+    sock.sendall(data)
 
 # an alias since json was really a dict!
 def send_json(sock: socket, d: dict):
@@ -25,11 +28,11 @@ def recv_dict(sock: socket) -> dict:
 def recv_size(sock: socket) -> str:
     # data length is packed into 4 bytes
     total_bytes_read = 0
-    size_of_message = 300000
-    chunk = bytes("", "utf-8")
+    size_of_message = 0
 
-    length_field = bytes("", "utf-8")
-    buffer = bytes("", "utf-8")
+    #chunk = bytes("", "utf-8")
+    length_field = bytearray()
+    buffer = bytearray()
 
     #
     # Read Message Length Field (size 4)
@@ -50,8 +53,9 @@ def recv_size(sock: socket) -> str:
     total_bytes_read = 0
     while total_bytes_read < size_of_message:
         # receives bytes!
-        chunk = sock.recv(size_of_message - len(buffer))
-        logger.info("  read chunk: {}".format(len(chunk)))
+        want = size_of_message - len(buffer)
+        chunk = sock.recv(want)
+        logger.info("wanted to read {} and read chunk: {}".format(want, len(chunk)))
         total_bytes_read += len(chunk)
         buffer += chunk
 
