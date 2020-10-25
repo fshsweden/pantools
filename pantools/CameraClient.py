@@ -84,7 +84,7 @@ class CameraClient():
                     
                     self.tcp_client.send_msg(msg)
 
-                    time.sleep(1)
+                    time.sleep(0.01)
 
         except Exception as e:
             logger.error("Exception in camera thread")
