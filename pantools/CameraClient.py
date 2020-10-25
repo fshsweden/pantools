@@ -67,7 +67,7 @@ class CameraClient(TCPClient):
             "frameno": frame_number,
             "image": frame,
         }
-        print(f"Sending message size: {get_size(msg)} where image {frame_number} of type {type(frame)} takes up {len(frame)} bytes")
+        print(f"Sending message size: {get_size(msg)} where image {frame_number} of type {type(frame)} takes up {frame.size} bytes")
         self.send_message(msg)
 
     def write_thread(self):
