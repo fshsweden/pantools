@@ -73,7 +73,7 @@ class CameraClient(TCPClient):
         self.send_message(msg)
 
     def write_thread(self):
-        logger.debug("write thread...")
+        logger.info("************ write thread started **************")
         try:
             while True:
                 logger.info("Reading video frame")
