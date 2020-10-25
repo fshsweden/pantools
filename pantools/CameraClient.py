@@ -75,7 +75,8 @@ class CameraClient(TCPClient):
         try:
             while True:
                 self.frame_number = self.frame_number + 1
-                self.currentFrame = self.vs.read()
+                fr = self.vs.read()
+                self.currentFrame = fr.copy()
 
                 if self.currentFrame is None:
                     logger.debug("No current frame!")
