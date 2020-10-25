@@ -45,7 +45,7 @@ class ClientConnection:
 
     def save_buffer(self, buf: bytes):
         self.filenum=self.filenum+1
-        filename = f"exception-file-{self.filenum}.pkl"
+        filename = f"image-file-{self.filenum}.pkl"
         with open(filename, "wb") as mypicklefile:
             pickle.dump(buf, mypicklefile)
 
@@ -63,7 +63,11 @@ class ClientConnection:
             try:
                 #obj = recv_dict(self.sock)
                 buf = recv_size(self.sock)
+                self.save_buffer(buf)
+
+                logger.debug(f"Size of raw data:{len(buf)}")
                 obj = pickle.loads(buf)
+                logger.debug(f"Size of unpickled data:{len(obj)}")
 
             except Exception as e:
                 logger.error(str(e))

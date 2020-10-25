@@ -5,10 +5,10 @@ from .logger import logger
 
 def send_size(sock: socket, data: bytes):
     # data is bytes()
-    lbuf = struct.pack(">i", len(data))
-    logger.debug(f"send_size sends {len(lbuf)} {len(data)} followed by the data")
-    sock.sendall(lbuf)
-    #buf = struct.pack(">i", data)
+    b = bytearray()
+    b += struct.pack(">i", len(data))
+    logger.info(f"send_size sends {len(b)} {len(data)} followed by the data")
+    sock.sendall(b)
     sock.sendall(data)
 
 # an alias since json was really a dict!

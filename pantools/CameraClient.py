@@ -57,7 +57,7 @@ class CameraClient(TCPClient):
         send_size(self.sock, m)
 
     def send_image(self, frame_number, frame) -> None:
-        self.send_message({
+        msg = {
             "message": "image",
             "msgtype": "image",
             "type": "json-object",
@@ -65,7 +65,9 @@ class CameraClient(TCPClient):
             "hostname": socket.gethostname(),
             "frameno": frame_number,
             "image": frame,
-        })
+        }
+        print(f"Sending message size: {len(msg)} where image {frame_number} takes up {len(frame)} bytes")
+        self.send_message(msg)
 
     def write_thread(self):
         logger.debug("write thread...")
