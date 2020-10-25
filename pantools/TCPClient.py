@@ -22,34 +22,12 @@ class TCPClient:
         self.sock = None
         self.adv_magic = magic
         self.adv_port = port
-        self.msg_handler = None
-        self.exception_handler = None
-        self.connection_status_handler = None
         
         self.inq = queue.Queue(10000)
         self.outq = queue.Queue(10000)
 
         self.quit_write_thread = False
         self.quit_read_thread = False
-
-
-    # ------------------------------------------------------------
-    # TCPClient:add_connection_status_handler
-    # ------------------------------------------------------------
-    def add_connection_status_handler(self, status_handler):
-        self.connection_status_handler = status_handler
-
-    # ------------------------------------------------------------
-    # TCPClient:add_msg_handler
-    # ------------------------------------------------------------
-    def add_msg_handler(self, msg_handler):
-        self.msg_handler = msg_handler
-
-    # ------------------------------------------------------------
-    # TCPClient:add_exception_handler
-    # ------------------------------------------------------------
-    def add_exception_handler(self, exception_handler):
-        self.exception_handler = exception_handler
 
     # ------------------------------------------------------------
     # If you dont know the service ip/port, use the advertisement!
@@ -110,42 +88,44 @@ class TCPClient:
     def write_thread(self):
         logger.debug("+++ ENTR +++ write_thread()")
         while (not self.quit_write_thread):
-            if self.outq.empty():
-                time.sleep(0.5)
-            else:
-                out_msg = self.outq.get()
+            out_msg = self.outq.get(block=True)
 
-                try:
-                    send_size(self.sock, out_msg)
-                except Exception as e:
-                    self.handle_exception(e)
-                    logger.error(f"Exception: {e} - exiting write thread")
-                    return
+            try:
+                send_size(self.sock, out_msg)
+            except Exception as e:
+                self.handle_exception(e)
+                logger.error(f"Exception: {e} - exiting write thread")
+                return
 
 
     # ------------------------------------------------------------
     #
     # ------------------------------------------------------------
     def handle_message(self, msg):
-        #self.inq.put(msg)
-        
-        if self.msg_handler is not None:
-            self.msg_handler(msg)
+        self.inq.put(msg)
 
 
     # ------------------------------------------------------------
     #
     # ------------------------------------------------------------
     def handle_exception(self, e):
-        if self.exception_handler is not None:
-            self.exception_handler(e)
+        msg = {
+            "message": "exception",
+            "msgtype": "event",
+            "exception": e
+        }
+        self.inq.put(msg)
 
     # ------------------------------------------------------------
     #
     # ------------------------------------------------------------
     def handle_connection_status(self, status):
-        if self.connection_status_handler is not None:
-            self.connection_status_handler(status)
+        msg = {
+            "message": "connection_status",
+            "msgtype": "event",
+            "status": status
+        }
+        self.inq.put(msg)
 
     #
     #
@@ -162,16 +142,11 @@ class TCPClient:
             })
 
 
-    #   BUG: DONT USE BOTH THIS AND THE QUEUE VERSION AT THE SAME TIME!
-    #
-    #
-    def send_msg_direct(self, msg_json):
-        msg_encoded = pickle.dumps(msg_json)
-        send_size(self.sock, msg_encoded)
-
-    #   BUG: DONT USE BOTH THIS AND THE DIRECT VERSION AT THE SAME TIME!
-    #
-    #
     def send_msg(self, msg_json):
         msg_encoded = pickle.dumps(msg_json)
         self.outq.put(msg_encoded)
+
+    def read_msg(self):
+        m = self.inq.get(block=True)
+        return m
+        

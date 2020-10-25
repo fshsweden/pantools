@@ -15,23 +15,16 @@ from .send_recv import send_size, recv_size
 # ================================================================
 #
 # ================================================================
-class CameraClient(TCPClient):
+class CameraClient():
 
     def __init__(self, magic, port, picam=False) -> None:
-        """Constructor 
-        
-        magic is the keystring that we look for when receiving advertisements on port "port"
 
-        Normally I use 6868. You Choose a unique keyword to listen for.
-
-        Syntax of advertisement is assumed to be KEYWORD#SERVICE-IP#SERVICE-PORT
-        """
-
-        super().__init__(magic, port)
         self.frame_number = 1
         self.picam = picam
         self.magic = magic
         self.port = port
+        self.tcp_client = TCPClient(magic, port)
+
         if self.picam == True:
             logger.debug("Using PI Camera!")
             self.vs = VideoStream(usePiCamera=True).start()
@@ -43,21 +36,13 @@ class CameraClient(TCPClient):
 
     def start_client(self):
         logger.debug("Camera Client start_client...")
-        super().start_client()
-        self.send_message({
+        self.tcp_client.start_client()
+        self.tcp_client.send_msg({
             "message": "announce",
             "msgtype": "admin",
             "hostname": socket.gethostname()
         })
-        start_new_thread(self.write_thread, ())
-
-    def handle_message(self, msg):
-        super().handle_message(msg)
-        logger.debug("CameraClient handle_message")
-
-    def send_message(self, msg) -> None:
-        m = pickle.dumps(msg)
-        send_size(self.sock, m)
+        start_new_thread(self.camera_thread, ())
 
     def send_image(self, frame_number, frame) -> None:
         msg = {
@@ -70,10 +55,10 @@ class CameraClient(TCPClient):
             "image": frame,
         }
         print(f"Sending message size: {get_size(msg)} where image {frame_number} of type {type(frame)} takes up {frame.size} bytes")
-        self.send_message(msg)
+        self.tcp_client.send_msg(msg)
 
-    def write_thread(self):
-        logger.info("************ write thread started **************")
+    def camera_thread(self):
+        logger.info("************ camera thread started **************")
         try:
             while True:
                 logger.info("Reading video frame")
@@ -96,24 +81,25 @@ class CameraClient(TCPClient):
                         "frameno": frnum,
                         "image": fr
                     }
-                    logger.info(f"Sending message size: {get_size(msg)} where image {frnum} of type {type(fr)} takes up {fr.size} bytes")
-                   
-                    bytearr = pickle.dumps(msg)
+                    
+                    self.tcp_client.send_msg(msg)
 
-                    bytearr_len = bytearray()
-                    bytearr_len += struct.pack(">i", len(bytearr))
-                    logger.info(f"send_size sends {len(bytearr_len)} {len(bytearr)} followed by the data")
-                    self.sock.sendall(bytearr_len)
-                    self.sock.sendall(bytearr)
-
-                    time.sleep(3)
+                    time.sleep(1)
 
         except Exception as e:
-            logger.error("Exception in write thread")
+            logger.error("Exception in camera thread")
             logger.error(str(e))
         finally:
-            logger.info("Closing socket from write_thread...")
-            self.sock.close()
+            logger.info("Exiting camera_thread...")
+
+    def send_msg(self, msg):
+        self.tcp_client.send_msg(msg)
+
+    # blocking read!
+    def read_msg(self):
+        msg = self.tcp_client.read_msg()
+        return msg
+            
 
 def get_size(obj, seen=None):
     """Recursively finds size of objects"""
