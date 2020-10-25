@@ -1,3 +1,4 @@
+import struct
 import imutils
 from imutils.video import VideoStream
 import time
@@ -5,6 +6,7 @@ from _thread import *
 import pickle 
 import socket
 import sys
+import struct
 
 from .TCPClient import TCPClient
 from .logger import logger
@@ -74,28 +76,38 @@ class CameraClient(TCPClient):
         logger.debug("write thread...")
         try:
             while True:
-                self.frame_number = self.frame_number + 1
+                logger.info("Reading video frame")
                 fr = self.vs.read()
-                self.currentFrame = fr.copy()
 
-                if self.currentFrame is None:
-                    logger.debug("No current frame!")
+                if fr is None:
+                    logger.error("No current frame!")
                 else:
-                    self.currentFrame = imutils.resize(
-                        self.currentFrame, width=512)
-                    # currentFrame = cv2.cvtColor(currentFrame, cv2.COLOR_BGR2GRAY)
+                    fr = fr.copy()
+                    fr = imutils.resize(fr, width=512)
+                    self.frame_number = self.frame_number + 1
+                    frnum = self.frame_number
 
-                    if self.frame_number % 100 == 0:
-                        logger.debug("{} frames sent to server!".format(
-                            self.frame_number))
+                    msg = {
+                        "message": "image",
+                        "msgtype": "image",
+                        "type": "json-object",
+                        "threadname": "none",
+                        "hostname": socket.gethostname(),
+                        "frameno": frnum,
+                        "image": fr
+                    }
+                    logger.info(f"Sending message size: {get_size(msg)} where image {frnum} of type {type(fr)} takes up {fr.size} bytes")
+                   
+                    bytearr = pickle.dumps(msg)
 
-                    logger.debug(f"Sending frame {self.frame_number}")
-                    self.send_image(
-                        self.frame_number,
-                        self.currentFrame,
-                    )
+                    bytearr_len = bytearray()
+                    bytearr_len += struct.pack(">i", len(bytearr))
+                    logger.info(f"send_size sends {len(bytearr_len)} {len(bytearr)} followed by the data")
+                    self.sock.sendall(bytearr_len)
+                    self.sock.sendall(bytearr)
 
-                    time.sleep(0.01)
+                    time.sleep(3)
+
         except Exception as e:
             logger.error("Exception in write thread")
             logger.error(str(e))
