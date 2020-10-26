@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 setup(
     name='pantools',
     packages=find_packages(include=['src']),
-    version='0.1.13.dev0',
+    version='0.1.13',
     author='Peter Andersson',
     author_email='peter.andersson@fsh.se',
     description='PAN Tools library',
