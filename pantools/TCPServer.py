@@ -15,6 +15,7 @@ from .ClientConnection import ClientConnection
 class TCPServer:
 
     def __init__(self) -> None:
+	"""TCPServer constructor. Needs no arguments since port etc is set in setup_server()"""
         self.clients = []
         self.subscribers = [] # deprecated
         self.msg_subscribers = {}
@@ -56,13 +57,15 @@ class TCPServer:
             start_new_thread(self.advertise_service,(adv_magic, adv_port, host, port))
 
     def advertise_service(self, adv_magic, adv_port, service_host, service_port) -> None:
+	"""Will continuosly send out an advertisement message using announce_service"""
+
         logger.info("Starting an advertising thread {} on port {}. Service on {} {}".format(adv_magic, adv_port, service_host, service_port))
         while True:
             announce_service(adv_magic, adv_port, service_host, service_port)
             time.sleep(5)
 
     def handle_message(self, client, obj) -> None:
-
+	"""Handles incoming messages to the server. Most important are announce and subscribe"""
         # message : ["image", "subscribe", "unsubscribe", "announce"]
         # msgtype : ["image", "admin", ""]
         message = obj["message"]
