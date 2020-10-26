@@ -25,22 +25,18 @@ class TCPServer:
         self.subscribers = []  # deprecated
         self.msg_subscribers = {}
         self.ThreadCount = 0
+        self.msg_counter = 0
         self.lock = threading.Lock()
 
     def print_clients(self, header) -> None:
         """Prints a table of active connections, followed by a table of active subscriptions"""
 
-        logger.info("--- connection list begin {} ---".format(header))
+        print(f"-- Clients (header):")
         for c in self.clients:
-            logger.info(c.getPeerName())
-        logger.info("--- connection list end         ---")
-
-        logger.info("--- subscriber list begin ---")
+            logger.info(f"Connected client:{c.getPeerName()}")
         for msgtype in self.msg_subscribers:
-            logger.info("msgtype:{}".format(msgtype))
             for c in self.msg_subscribers[msgtype]:
-                logger.info(c.getPeerName())
-        logger.info("--- subscriber list end ---")
+                logger.info(f"Subscriber of msgtype:{msgtype} is {c.getPeerName()}")
 
     def setup_server(self, host, port, adv_magic=None, adv_port=None) -> None:
         """Creates a socket and starts listening. Also optionally starts an Anouncement thread"""
@@ -128,10 +124,10 @@ class TCPServer:
 
     def send_message_to_all_subscribers(self, msg) -> None:
         self.lock.acquire()
-        logger.debug("finding subscribers of msgtype {}".format(msg["msgtype"]))
+        logger.info("finding subscribers of msgtype {}".format(msg["msgtype"]))
         if msg["msgtype"] in self.msg_subscribers:
             for c in self.msg_subscribers[msg["msgtype"]]:
-                logger.debug("Sending message to {}".format(c))
+                logger.info("Sending message to {}".format(c))
                 try:
                     send_json(c.getSocket(), msg)
                 except Exception as e:
@@ -147,7 +143,6 @@ class TCPServer:
 
             client = ClientConnection(client_socket, self)
             self.add_client(client)
-            self.print_clients("After CLIENT ACCEPTED")
             client.start_reader()
 
     def stop_server(self):
@@ -158,6 +153,9 @@ class TCPServer:
         message = obj["message"]
         msgtype = obj["msgtype"]
 
+        self.msg_counter = self.msg_counter + 1
+        if self.msg_counter % 100 == 0:
+            print(f"{self.msg_counter} messages received!")
         # filter out the ones we dont want printed out
         if message not in ["image"]:
             logger.debug(f"Received message {message}")
@@ -172,7 +170,7 @@ class TCPServer:
             self.print_clients("After UNSUBSCRIBE")
 
         if message == "image":
-            logger.debug("Received image {}".format(obj["frameno"]))
+            logger.info("Received image {}".format(obj["frameno"]))
             self.send_message_to_all_subscribers(obj)
 
         if message == "announce":

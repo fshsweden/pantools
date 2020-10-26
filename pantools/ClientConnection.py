@@ -61,13 +61,14 @@ class ClientConnection:
         while True:
             buf = bytes()
             try:
-                #obj = recv_dict(self.sock)
                 buf = recv_size(self.sock)
-                self.save_buffer(buf)
+                #self.save_buffer(buf)
 
                 logger.debug(f"Size of raw data:{len(buf)}")
                 obj = pickle.loads(buf)
                 logger.debug(f"Size of unpickled data:{len(obj)}")
+
+                self.server.handle_message(self, obj)
 
             except Exception as e:
                 logger.error(str(e))

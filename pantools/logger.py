@@ -1,6 +1,7 @@
 import logging, sys, os
 
-l = logging.DEBUG
+#default
+l = logging.INFO
 
 if os.environ.get('LOG') == "INFO":
     print("Setting loglevel to INFO")
@@ -14,7 +15,8 @@ else:
             l = logging.WARNING
             print("Setting loglevel to WARNING")
         else:
-            print("Setting loglevel to DEBUG")
+            pass
+            #print("Setting loglevel to DEBUG")
 
 
 logging.basicConfig(
