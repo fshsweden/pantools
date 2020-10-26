@@ -1,10 +1,10 @@
 from setuptools import find_packages, setup
 setup(
     name='pantools',
-    packages=find_packages(include=['pantools']),
+    packages=find_packages(include=['src']),
     version='0.1.13.dev0',
     author='Peter Andersson',
-    author_email='peter@fsh.se',
+    author_email='peter.andersson@fsh.se',
     description='PAN Tools library',
     url="https://github.com/fshsweden/pantools",
     license='MIT',

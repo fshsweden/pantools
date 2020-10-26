@@ -1,5 +1,8 @@
 import threading
-import time,logging, sys, os
+import time
+import logging
+import sys
+import os
 import socket
 import pickle
 from _thread import *
@@ -12,19 +15,21 @@ from .ClientConnection import ClientConnection
 # ================================================================
 #
 # ================================================================
+
+
 class TCPServer:
 
     def __init__(self) -> None:
-	"""TCPServer constructor. Needs no arguments since port etc is set in setup_server()"""
+        """TCPServer constructor. Needs no arguments since port etc is set in setup_server()"""
         self.clients = []
-        self.subscribers = [] # deprecated
+        self.subscribers = []  # deprecated
         self.msg_subscribers = {}
         self.ThreadCount = 0
         self.lock = threading.Lock()
 
     def print_clients(self, header) -> None:
         """Prints a table of active connections, followed by a table of active subscriptions"""
-        
+
         logger.info("--- connection list begin {} ---".format(header))
         for c in self.clients:
             logger.info(c.getPeerName())
@@ -42,7 +47,7 @@ class TCPServer:
         self.ServerSocket = socket.socket()
         self.ServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.ThreadCount = 0
-        
+
         try:
             logger.info("Binding to {}:{}".format(host, port))
             self.ServerSocket.bind((host, port))
@@ -54,48 +59,17 @@ class TCPServer:
         self.ServerSocket.listen(5)
 
         if adv_magic is not None and adv_port is not None:
-            start_new_thread(self.advertise_service,(adv_magic, adv_port, host, port))
+            start_new_thread(self.advertise_service,
+                             (adv_magic, adv_port, host, port))
 
     def advertise_service(self, adv_magic, adv_port, service_host, service_port) -> None:
-	"""Will continuosly send out an advertisement message using announce_service"""
+        """Will continuosly send out an advertisement message using announce_service"""
 
-        logger.info("Starting an advertising thread {} on port {}. Service on {} {}".format(adv_magic, adv_port, service_host, service_port))
+        logger.info("Starting an advertising thread {} on port {}. Service on {} {}".format(
+            adv_magic, adv_port, service_host, service_port))
         while True:
             announce_service(adv_magic, adv_port, service_host, service_port)
             time.sleep(5)
-
-    def handle_message(self, client, obj) -> None:
-	"""Handles incoming messages to the server. Most important are announce and subscribe"""
-        # message : ["image", "subscribe", "unsubscribe", "announce"]
-        # msgtype : ["image", "admin", ""]
-        message = obj["message"]
-        msgtype = obj["msgtype"]
-
-        # filter out the ones we dont want printed out
-        if message not in ["image"]:
-            logger.debug(f"Received message {message}")
-
-        if message == "subscribe":
-            #self.lookup_client(connection)
-            self.add_subscriber(msgtype, client)
-            self.print_clients("After SUBSCRIBE")
-
-        if message == "unsubscribe":
-            self.remove_subscriber(msgtype, client)
-            self.print_clients("After UNSUBSCRIBE")
-
-        if message == "image":
-            logger.debug("Received image {}".format(obj["frameno"]))
-            self.send_message_to_all_subscribers(obj)
-
-        if message == "announce":
-            logger.debug("Received announce {}".format(obj["hostname"]))
-            client.set_hostname(obj["hostname"])
-
-        # Query Reply!
-        if message == "gethosts":
-            logger.debug("Received gethosts")
-            
 
     def read_exception(self, client, e):
         self.remove_client(client)
@@ -178,3 +152,36 @@ class TCPServer:
 
     def stop_server(self):
         self.ServerSocket.close()
+
+    def handle_message(self, client, obj) -> None:
+        """Handles incoming messages to the server. Most important are announce and subscribe"""
+        message = obj["message"]
+        msgtype = obj["msgtype"]
+
+        # filter out the ones we dont want printed out
+        if message not in ["image"]:
+            logger.debug(f"Received message {message}")
+
+        if message == "subscribe":
+            # self.lookup_client(connection)
+            self.add_subscriber(msgtype, client)
+            self.print_clients("After SUBSCRIBE")
+
+        if message == "unsubscribe":
+            self.remove_subscriber(msgtype, client)
+            self.print_clients("After UNSUBSCRIBE")
+
+        if message == "image":
+            logger.debug("Received image {}".format(obj["frameno"]))
+            self.send_message_to_all_subscribers(obj)
+
+        if message == "announce":
+            logger.debug("Received announce {}".format(obj["hostname"]))
+            client.set_hostname(obj["hostname"])
+
+        # Query Reply!
+        if message == "gethosts":
+            logger.debug("Received gethosts")
+            
+
+
