@@ -7,7 +7,7 @@ def send_size(sock: socket, data: bytes):
     # data is bytes()
     b = bytearray()
     b += struct.pack(">i", len(data))
-    logger.info(f"send_size sends {len(b)} {len(data)} followed by the data")
+    logger.debug(f"send_size sends {len(b)} {len(data)} followed by the data")
     sock.sendall(b)
     sock.sendall(data)
 
@@ -18,7 +18,6 @@ def send_json(sock: socket, d: dict):
 def send_dict(sock: socket, d: dict):
     #convert dictionary to bytes
     message = pickle.dumps(d)
-    logger.debug(f"sending dictionary")
     send_size(sock, message)
 
 def recv_dict(sock: socket) -> dict:
@@ -29,8 +28,6 @@ def recv_size(sock: socket) -> str:
     # data length is packed into 4 bytes
     total_bytes_read = 0
     size_of_message = 0
-
-    #chunk = bytes("", "utf-8")
     length_field = bytearray()
     buffer = bytearray()
 
@@ -48,19 +45,19 @@ def recv_size(sock: socket) -> str:
 
     size_of_message = struct.unpack(">i", length_field)[0]
     
-    logger.info("size of message is: {}".format(size_of_message))
+    logger.debug("size of message is: {}".format(size_of_message))
 
     total_bytes_read = 0
     while total_bytes_read < size_of_message:
         # receives bytes!
         want = size_of_message - len(buffer)
         chunk = sock.recv(want)
-        logger.info("wanted to read {} and read chunk: {}".format(want, len(chunk)))
+        logger.debug("wanted to read {} and read chunk: {}".format(want, len(chunk)))
         total_bytes_read += len(chunk)
         buffer += chunk
 
-    logger.info(f"  done reading chunks: total size is {len(buffer)}")
+    logger.debug(f"  done reading chunks: total size is {len(buffer)}")
     if (total_bytes_read != len(buffer)):
-        print("XXXXXXXXXXX SRIOUS ERROR! XXXXXXXXXXXX")
+        logger.error("XXXXXXXXXXX SERIOUS ERROR! XXXXXXXXXXXX")
     return buffer
     
