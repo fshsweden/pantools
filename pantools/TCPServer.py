@@ -124,10 +124,9 @@ class TCPServer:
 
     def send_message_to_all_subscribers(self, msg) -> None:
         self.lock.acquire()
-        logger.info("finding subscribers of msgtype {}".format(msg["msgtype"]))
         if msg["msgtype"] in self.msg_subscribers:
             for c in self.msg_subscribers[msg["msgtype"]]:
-                logger.info("Sending message to {}".format(c))
+                logger.debug("Sending message to {}".format(c))
                 try:
                     send_json(c.getSocket(), msg)
                 except Exception as e:
@@ -170,7 +169,6 @@ class TCPServer:
             self.print_clients("After UNSUBSCRIBE")
 
         if message == "image":
-            logger.info("Received image {}".format(obj["frameno"]))
             self.send_message_to_all_subscribers(obj)
 
         if message == "announce":
