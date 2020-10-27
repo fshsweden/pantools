@@ -1,0 +1,4 @@
+last=`ls -t dist/* | head -1`
+echo "$last"
+pip install "$last" --upgrade
+

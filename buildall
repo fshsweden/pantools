@@ -2,3 +2,6 @@ python setup.py clean
 python setup.py build
 python setup.py bdist_wheel
 python setup.py pytest
+last=`ls -t dist/* | head -1`
+echo "$last"
+pip install "$last" --upgrade
