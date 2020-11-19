@@ -154,7 +154,8 @@ class TCPServer:
 
         self.msg_counter = self.msg_counter + 1
         if self.msg_counter % 100 == 0:
-            print(f"{self.msg_counter} messages received!")
+            logger.debug(f"{self.msg_counter} messages received!")
+
         # filter out the ones we dont want printed out
         if message not in ["image"]:
             logger.debug(f"Received message {message}")
