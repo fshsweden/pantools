@@ -1,7 +1,9 @@
-python setup.py clean
-python setup.py build
-python setup.py bdist_wheel
-python setup.py pytest
+#! /bin/bash
+echo "Running shell ${BASH_VERSION}"
+#python3 setup.py clean
+python3 -m build
+# python3 setup.py bdist_wheel
+# python3 setup.py pytest
 last=`ls -t dist/* | head -1`
-echo "$last"
+echo "Last version is: $last"
 pip install "$last" --upgrade
