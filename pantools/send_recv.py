@@ -32,7 +32,7 @@ def send_json(sock: socket, d: dict):
 
 def send_dict_json(sock: socket, d: dict):
     #convert dictionary to bytes
-    message = json.dumps(d)
+    message = json.dumps(d) + "\r\n"
     send_string(sock, message)
 
 

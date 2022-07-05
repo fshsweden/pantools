@@ -7,7 +7,7 @@ from pantools.net import announce_service
 from pantools.logger import logger
 from pantools.send_recv import send_dict_json, send_dict_pickle
 from .ClientConnection import ClientConnection
-from .JsonClientConnection import JsonClientConnection
+#### FIX from .JsonClientConnection import JsonClientConnection
 
 # ================================================================
 #
